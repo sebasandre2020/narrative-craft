@@ -1,0 +1,45 @@
+{
+  "turn_id": "turn_01HXZ7K8M9NPQR0123456789AB",
+  "timeline_id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+  "sequence_number": 14,
+  "status": "COMMITTED",
+  "prose": "The ancient key bites into the tarnished lock with a harsh metallic screech. Rust flakes scatter across the cold flagstones as the tumblers finally yield. With a groaning heave, the heavy iron portcullis rises, revealing the damp, shadowed expanse of the antechamber beyond.",
+  "graph_delta": {
+    "mutations": [
+      {
+        "action": "UPDATE_NODE_PROPERTY",
+        "node_id": "gate_iron_portcullis",
+        "key": "locked",
+        "value": false
+      },
+      {
+        "action": "UPDATE_EDGE_PROPERTY",
+        "source": "loc_crypt",
+        "target": "loc_antechamber",
+        "relation": "adjacent_to",
+        "key": "barrier_status",
+        "value": "open"
+      }
+    ],
+    "new_facts": [
+      {
+        "entity_id": "gate_iron_portcullis",
+        "fact": "The rusted iron portcullis was successfully unlocked using the engraved silver key."
+      }
+    ]
+  },
+  "lore_citations": [
+    {
+      "source": "Citadel Architecture Codex",
+      "relevance_score": 0.92,
+      "snippet": "The lower portcullises were forged with dual tumblers keyed to imperial silver ward keys."
+    }
+  ],
+  "telemetry": {
+    "latency_ms": 1180,
+    "prompt_tokens": 842,
+    "completion_tokens": 128,
+    "reflection_cycles": 0
+  },
+  "committed_at": "2026-09-27T15:45:00.000Z"
+}

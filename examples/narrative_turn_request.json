@@ -1,0 +1,16 @@
+{
+  "character_id": "char_vespera",
+  "action": "I draw the silver key from my satchel, slide it into the rusted mechanism of the iron portcullis, and turn it firmly to open the way into the antechamber.",
+  "intent": {
+    "verb": "unlock_and_open",
+    "target_item": "gate_iron_portcullis",
+    "used_item": "item_silver_key",
+    "target_location": "loc_antechamber"
+  },
+  "parameters": {
+    "temperature": 0.7,
+    "max_tokens": 600,
+    "stream_prose": true,
+    "extract_delta": true
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "turn_id": "turn_01HXZ7K8M9NPQR0123456789AB",
+  "mutations": [
+    {
+      "action": "UPDATE_NODE_PROPERTY",
+      "node_id": "gate_iron_portcullis",
+      "key": "locked",
+      "value": false
+    },
+    {
+      "action": "ADD_EDGE",
+      "source": "char_vespera",
+      "target": "loc_antechamber",
+      "relation": "can_access",
+      "properties": {
+        "via": "gate_iron_portcullis"
+      }
+    }
+  ],
+  "removed_edges": [],
+  "new_facts": [
+    {
+      "entity_id": "gate_iron_portcullis",
+      "fact": "The portcullis is unlocked and standing ajar."
+    }
+  ]
+}

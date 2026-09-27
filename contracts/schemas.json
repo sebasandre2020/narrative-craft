@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://narrative-craft.internal/schemas.json",
+  "title": "Narrative-Craft Schema Registry",
+  "definitions": {
+    "GraphNode": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "type": "string", "enum": ["character", "location", "item", "faction", "concept"] },
+        "label": { "type": "string" },
+        "properties": { "type": "object" }
+      },
+      "required": ["id", "type", "label"]
+    },
+    "GraphEdge": {
+      "type": "object",
+      "properties": {
+        "source": { "type": "string" },
+        "target": { "type": "string" },
+        "relation": { "type": "string" },
+        "properties": { "type": "object" }
+      },
+      "required": ["source", "target", "relation"]
+    },
+    "GraphMutation": {
+      "type": "object",
+      "properties": {
+        "action": {
+          "type": "string",
+          "enum": ["ADD_NODE", "REMOVE_NODE", "UPDATE_NODE_PROPERTY", "ADD_EDGE", "REMOVE_EDGE", "UPDATE_EDGE_PROPERTY"]
+        },
+        "node_id": { "type": "string" },
+        "source": { "type": "string" },
+        "target": { "type": "string" },
+        "relation": { "type": "string" },
+        "key": { "type": "string" },
+        "value": {}
+      },
+      "required": ["action"]
+    },
+    "WorldDelta": {
+      "type": "object",
+      "properties": {
+        "mutations": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/GraphMutation" }
+        },
+        "new_facts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "entity_id": { "type": "string" },
+              "fact": { "type": "string" }
+            },
+            "required": ["entity_id", "fact"]
+          }
+        }
+      },
+      "required": ["mutations"]
+    },
+    "NarrativeEvent": {
+      "type": "object",
+      "properties": {
+        "event_id": { "type": "string", "format": "uuid" },
+        "timeline_id": { "type": "string", "format": "uuid" },
+        "sequence_number": { "type": "integer", "minimum": 1 },
+        "action_prompt": { "type": "string" },
+        "narrative_prose": { "type": "string" },
+        "graph_delta": { "$ref": "#/definitions/WorldDelta" },
+        "committed_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["event_id", "timeline_id", "sequence_number", "action_prompt", "narrative_prose", "graph_delta"]
+    }
+  }
+}

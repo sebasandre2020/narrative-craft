@@ -1,0 +1,85 @@
+{
+  "title": "Shadow of the Iron Citadel",
+  "description": "A gothic dark fantasy world ruled by warring factions and ancient catacombs.",
+  "template": "dark_fantasy_citadel",
+  "config": {
+    "max_reflection_attempts": 2,
+    "temporal_decay_lambda": 0.05,
+    "subgraph_hops": 2,
+    "enforce_strict_causality": true
+  },
+  "initial_entities": {
+    "characters": [
+      {
+        "id": "char_vespera",
+        "label": "Lady Vespera",
+        "properties": {
+          "class": "Arcane Inquisitor",
+          "hp": 100,
+          "inventory_capacity": 10
+        }
+      }
+    ],
+    "locations": [
+      {
+        "id": "loc_crypt",
+        "label": "Crypt of Ancients",
+        "properties": {
+          "lighting": "dim",
+          "terrain": "stone_catacombs"
+        }
+      },
+      {
+        "id": "loc_antechamber",
+        "label": "Damp Antechamber",
+        "properties": {
+          "lighting": "dark",
+          "terrain": "collapsed_tunnel"
+        }
+      }
+    ],
+    "items": [
+      {
+        "id": "item_silver_key",
+        "label": "Engraved Silver Key",
+        "properties": {
+          "weight_kg": 0.1,
+          "material": "silver"
+        }
+      },
+      {
+        "id": "gate_iron_portcullis",
+        "label": "Rusted Iron Portcullis",
+        "properties": {
+          "locked": true,
+          "key_requirement": "item_silver_key"
+        }
+      }
+    ],
+    "relations": [
+      {
+        "source": "char_vespera",
+        "target": "loc_crypt",
+        "relation": "located_in"
+      },
+      {
+        "source": "char_vespera",
+        "target": "item_silver_key",
+        "relation": "possesses"
+      },
+      {
+        "source": "gate_iron_portcullis",
+        "target": "loc_crypt",
+        "relation": "located_in"
+      },
+      {
+        "source": "loc_crypt",
+        "target": "loc_antechamber",
+        "relation": "adjacent_to",
+        "properties": {
+          "barrier": "gate_iron_portcullis"
+        }
+      }
+    ]
+  }
+}

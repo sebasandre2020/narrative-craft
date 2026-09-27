@@ -1,0 +1,408 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Narrative-Craft Headless Engine API",
+    "description": "Graph-augmented stateful narrative engine and multiverse simulation service",
+    "version": "0.1.0",
+    "contact": {
+      "name": "Principal AI Systems Architect"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8000",
+      "description": "Local development server"
+    },
+    {
+      "url": "https://api.narrative-craft.internal",
+      "description": "Production internal cluster endpoint"
+    }
+  ],
+  "paths": {
+    "/health/live": {
+      "get": {
+        "summary": "Liveness Probe",
+        "description": "Checks if the API process is alive",
+        "operationId": "getLiveness",
+        "responses": {
+          "200": {
+            "description": "Service is alive",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health/ready": {
+      "get": {
+        "summary": "Readiness Probe",
+        "description": "Checks database, redis, and qdrant dependencies",
+        "operationId": "getReadiness",
+        "responses": {
+          "200": {
+            "description": "All dependencies healthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthStatus"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "One or more dependencies unhealthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/worlds": {
+      "post": {
+        "summary": "Create World Session",
+        "description": "Initialize a new narrative world session with optional seed entities",
+        "operationId": "createWorld",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateWorldRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "World session created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorldResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error in world seed data",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/worlds/{world_id}": {
+      "get": {
+        "summary": "Get World Session",
+        "description": "Retrieve world configuration and active timelines",
+        "operationId": "getWorld",
+        "parameters": [
+          {
+            "name": "world_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "World session retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorldResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "World not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/timelines/{timeline_id}/turns": {
+      "post": {
+        "summary": "Execute Narrative Turn",
+        "description": "Submits a user action, validates physical causality, generates prose, and streams tokens and deltas over SSE",
+        "operationId": "executeTurn",
+        "parameters": [
+          {
+            "name": "timeline_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NarrativeTurnRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Turn executed and streamed via Server-Sent Events",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string",
+                  "description": "SSE stream emitting token, graph_delta, and complete events"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NarrativeTurnResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Precondition rule violation (e.g. key missing, locked door)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Timeline session locked by another concurrent turn",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/timelines/{timeline_id}/fork": {
+      "post": {
+        "summary": "Fork Alternate Multiverse Timeline",
+        "description": "Branches a new child timeline from a specific historical event snapshot",
+        "operationId": "forkTimeline",
+        "parameters": [
+          {
+            "name": "timeline_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ForkTimelineRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Child timeline created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TimelineResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/timelines/{timeline_id}/graph/subgraph": {
+      "get": {
+        "summary": "Extract Subgraph Neighborhood",
+        "description": "Extracts k-hop neighborhood around target character or entity",
+        "operationId": "getSubgraph",
+        "parameters": [
+          {
+            "name": "timeline_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "center_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "hops",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 2,
+              "minimum": 1,
+              "maximum": 4
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Extracted subgraph neighborhood",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubgraphResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "HealthStatus": {
+        "type": "object",
+        "properties": {
+          "status": { "type": "string", "example": "healthy" },
+          "version": { "type": "string", "example": "0.1.0" },
+          "components": {
+            "type": "object",
+            "additionalProperties": { "type": "string" }
+          }
+        },
+        "required": ["status"]
+      },
+      "CreateWorldRequest": {
+        "type": "object",
+        "properties": {
+          "title": { "type": "string" },
+          "description": { "type": "string" },
+          "template": { "type": "string" },
+          "config": { "type": "object" }
+        },
+        "required": ["title"]
+      },
+      "WorldResponse": {
+        "type": "object",
+        "properties": {
+          "world_id": { "type": "string", "format": "uuid" },
+          "title": { "type": "string" },
+          "description": { "type": "string" },
+          "active_timeline_id": { "type": "string", "format": "uuid" },
+          "created_at": { "type": "string", "format": "date-time" }
+        },
+        "required": ["world_id", "title", "active_timeline_id"]
+      },
+      "NarrativeTurnRequest": {
+        "type": "object",
+        "properties": {
+          "character_id": { "type": "string" },
+          "action": { "type": "string" },
+          "intent": { "type": "object" },
+          "parameters": { "type": "object" }
+        },
+        "required": ["character_id", "action"]
+      },
+      "NarrativeTurnResponse": {
+        "type": "object",
+        "properties": {
+          "turn_id": { "type": "string" },
+          "timeline_id": { "type": "string", "format": "uuid" },
+          "sequence_number": { "type": "integer" },
+          "status": { "type": "string" },
+          "prose": { "type": "string" },
+          "graph_delta": { "type": "object" },
+          "lore_citations": { "type": "array", "items": { "type": "object" } },
+          "committed_at": { "type": "string", "format": "date-time" }
+        },
+        "required": ["turn_id", "timeline_id", "sequence_number", "status", "prose"]
+      },
+      "ForkTimelineRequest": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "fork_event_id": { "type": "string", "format": "uuid" },
+          "description": { "type": "string" }
+        },
+        "required": ["name", "fork_event_id"]
+      },
+      "TimelineResponse": {
+        "type": "object",
+        "properties": {
+          "timeline_id": { "type": "string", "format": "uuid" },
+          "world_id": { "type": "string", "format": "uuid" },
+          "parent_timeline_id": { "type": ["string", "null"], "format": "uuid" },
+          "fork_event_id": { "type": ["string", "null"], "format": "uuid" },
+          "name": { "type": "string" },
+          "created_at": { "type": "string", "format": "date-time" }
+        },
+        "required": ["timeline_id", "world_id", "name"]
+      },
+      "SubgraphResponse": {
+        "type": "object",
+        "properties": {
+          "center_id": { "type": "string" },
+          "hops": { "type": "integer" },
+          "nodes": { "type": "array", "items": { "type": "object" } },
+          "edges": { "type": "array", "items": { "type": "object" } }
+        },
+        "required": ["center_id", "hops", "nodes", "edges"]
+      },
+      "ProblemDetails": {
+        "type": "object",
+        "properties": {
+          "type": { "type": "string" },
+          "title": { "type": "string" },
+          "status": { "type": "integer" },
+          "detail": { "type": "string" },
+          "instance": { "type": "string" }
+        },
+        "required": ["title", "status"]
+      }
+    }
+  }
+}

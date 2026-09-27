@@ -1,0 +1,49 @@
+# Build stage
+FROM python:3.12-slim-bookworm AS builder
+
+WORKDIR /build
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY pyproject.toml .
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir .
+
+# Runtime stage
+FROM python:3.12-slim-bookworm AS runner
+
+LABEL maintainer="Principal AI Systems Architect"
+LABEL service="narrative-craft"
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create unprivileged runtime user
+RUN groupadd -g 10001 narrative && \
+    useradd -u 10001 -g narrative -m -s /bin/bash narrative
+
+COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
+COPY --from=builder /usr/local/bin /usr/local/bin
+
+COPY . /app
+RUN chown -R narrative:narrative /app
+
+USER narrative
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PORT=8000
+
+EXPOSE 8000
+
+HEALTHCHECK --interval=15s --timeout=5s --start-period=10s --retries=3 \
+    CMD curl -f http://localhost:8000/health/live || exit 1
+
+ENTRYPOINT ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

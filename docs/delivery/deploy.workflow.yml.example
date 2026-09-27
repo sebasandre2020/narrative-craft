@@ -1,0 +1,71 @@
+name: Production Release & Deploy
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    name: Build, Scan & Deploy to AWS ECS
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::123456789012:role/github-actions-deploy-role
+          aws-region: us-east-1
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build Container Image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: narrative-craft-api
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -f infra/docker/Dockerfile.blueprint \
+            -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
+            -t $ECR_REGISTRY/$ECR_REPOSITORY:latest .
+
+      - name: Run Trivy Security Scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ steps.login-ecr.outputs.registry }}/narrative-craft-api:${{ github.sha }}
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          severity: 'CRITICAL,HIGH'
+
+      - name: Push Container to Amazon ECR
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: narrative-craft-api
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+
+      - name: Deploy to AWS ECS Fargate
+        run: |
+          aws ecs update-service \
+            --cluster narrative-craft-production-cluster \
+            --service narrative-craft-api \
+            --force-new-deployment
+
+      - name: Verify Service Health
+        run: |
+          aws ecs wait services-stable \
+            --cluster narrative-craft-production-cluster \
+            --services narrative-craft-api
